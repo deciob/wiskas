@@ -4,18 +4,22 @@ boxChart = require('lib/box_chart')
 class BoxCharts extends Spine.Controller
 
   template: require('views/box_charts')
-  box: new boxChart()
 
   constructor: ->
     super
+    @vis_id = @el.attr('id') + "_vis"
+    @box_chart = new boxChart(@vis_id)
     @render()
-    #@box.draw()()
     
   render: ->
-    @.html @template()
+    @.html @template(@)
+    # to override defaults you can do this:
+    # vis = @box_chart.init( {height:100} )
+    # or this
+    # vis = @box_chart.init().height(200)
+    vis = @box_chart.init()
+    @box_chart.draw(vis)
     
   
-    
-    
-    
+      
 module.exports = BoxCharts

@@ -1,19 +1,17 @@
 
-
 class boxChart
+
+  # conventions:
+  #  throughout the code c stands for configuration
   
-  constructor: -> 
-    self = @
-    @margin = { top: 10, right: 50, bottom: 20, left: 50 }
-    @width = 120 - @margin.left - @margin.right
-    @height = 500 - @margin.top - @margin.bottom
+  constructor: (vis_id) -> 
+    @vis_id = vis_id
     @min = Infinity
     @max = -Infinity
-        
-    @chart = @draw()
-      .width(@width)
-      .height(@height)
-      
+
+
+  draw: (chart) ->
+    self = @
     d3.csv("../data/life_expectancy_2010.csv", (csv) ->
       self.data = []
       data_child = []  # initial assumption: only 1 data group
@@ -26,31 +24,37 @@ class boxChart
       )
       self.data.push(data_child)
       
-      self.svg = d3.select("#box_viz").selectAll("svg")
+      self.svg = d3.select("##{self.vis_id}").selectAll("svg")
         .data(self.data)
       .enter().append("svg")
         .attr("class", "box")
-        .attr("width", self.width + self.margin.left + self.margin.right)
-        .attr("height", self.height + self.margin.bottom + self.margin.top)
+        .attr("width", 
+          self.c.width + self.c.margin.left + self.c.margin.right)
+        .attr("height", 
+          self.c.height + self.c.margin.bottom + self.c.margin.top)
       self.svg.append("g")
-        .attr("transform", "translate(#{self.margin.left}, #{self.margin.top})")
-        .call(self.chart)
+        .attr("transform", 
+          "translate(#{self.c.margin.left}, #{self.c.margin.top})")
+        .call(chart)
       
     )
     
 
-  draw: ->
+  init: (conf) ->
     self = @
-    # defaults
-    #width 
-    
+    c =
+      margin: top: 10, right: 50, bottom: 20, left: 50
+    c.height = 500 - c.margin.top - c.margin.bottom
+    c.width = 600 - c.margin.left - c.margin.right
+    @c = $.extend(yes, c, conf)
+ 
     
     box = (g) ->
     
       y = d3.scale.linear()
         # input inverted because svg y positions are counted from top to bottom
         .domain([self.max, self.min])  # input
-        .range([0, box.height()])      # output
+        .range([0, self.c.height])      # output
 
       yAxis = d3.svg.axis()
         .scale(y)
@@ -61,7 +65,7 @@ class boxChart
         .attr("class", "y axis")
         .call(yAxis)
         # translate(x, y)
-        .attr("transform", "translate(#{self.margin.left}, #{self.margin.top})")
+        .attr("transform", "translate(#{self.c.margin.left}, #{self.c.margin.top})")
       
       g.each( (d, i) ->
         #console.log 'g.each', d, i 
@@ -70,14 +74,14 @@ class boxChart
       
       
     box.width = (value) ->
-      return self.width unless arguments.length
-      self.width = value
+      return self.c.width unless arguments.length
+      self.c.width = value
       box
       
       
     box.height = (value) ->
-      return self.height unless arguments.length
-      self.height = value
+      return self.c.height unless arguments.length
+      self.c.height = value
       box
       
 
