@@ -28,8 +28,7 @@ class boxChart
         .data(self.data)
       .enter().append("svg")
         .attr("class", "box")
-        .attr("width", 
-          self.c.width + self.c.margin.left + self.c.margin.right)
+        # width fluid, inherits from parent element
         .attr("height", 
           self.c.height + self.c.margin.bottom + self.c.margin.top)
       self.svg.append("g")
