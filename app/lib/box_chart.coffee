@@ -111,12 +111,12 @@ class boxChart
         
     box.width = (value) ->
       return self.c.width unless arguments.length
-      self.c.width = value
+      self.c.width = value - c.margin.left - c.margin.right
       box
       
     box.height = (value) ->
       return self.c.height unless arguments.length
-      self.c.height = value
+      self.c.height = value - c.margin.top - c.margin.bottom
       box
       
     box.axis = (value) ->
