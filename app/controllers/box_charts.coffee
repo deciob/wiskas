@@ -21,7 +21,7 @@ class BoxCharts extends Spine.Controller
       #.axis(no)
       #.subTicks(yes)
       #.height(200)
-      #.width(100)
+      #.width(300)
     @box_chart.draw(chart)
     
   
