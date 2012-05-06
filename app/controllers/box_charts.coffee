@@ -17,8 +17,8 @@ class BoxCharts extends Spine.Controller
     # vis = @box_chart.init( {height:100} )
     # or this
     # vis = @box_chart.init().height(200)
-    vis = @box_chart.init()#.axis(yes)
-    @box_chart.draw(vis)
+    chart = @box_chart.init()#.axis(yes)
+    @box_chart.draw(chart)
     
   
       

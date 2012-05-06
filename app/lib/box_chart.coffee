@@ -3,6 +3,20 @@ class boxChart
 
   # conventions:
   #  throughout the code c stands for configuration
+  #  the svg left-right margins are calculated doubbling the box margin value
+  
+  # typical svg structure:
+  #
+  #  <div id="box_chart_vis">
+  #    <svg class="parent" width="140" height="500">
+  #      <g>
+  #        <g class="y axis" transform="translate(40, 10)">
+  #        <g class="boxes" transform="translate(40, 10)">
+  #          <g class="box" width="100" height="500">
+  #        </g>
+  #      </g>
+  #    </svg>
+  #  </div>
   
   constructor: (vis_id) -> 
     @vis_id = vis_id
@@ -12,6 +26,7 @@ class boxChart
 
   draw: (chart) ->
     self = @
+    # TODO: sort out data origins
     d3.csv("../data/life_expectancy_2010.csv", (csv) ->
       self.data = []
       data_child = []  # initial assumption: only 1 data group
@@ -24,37 +39,6 @@ class boxChart
       )
       self.data.push(data_child)
       
-      self.svg = d3.select("##{self.vis_id}").selectAll("svg")
-        .data(self.data)
-      .enter().append("svg")
-        .attr("class", "box")
-        .attr("width", 
-          self.c.width + self.c.margin.left + self.c.margin.right)
-        .attr("height", 
-          self.c.height + self.c.margin.bottom + self.c.margin.top)
-      self.svg.append("g")
-        .attr("transform", 
-          "translate(#{self.c.margin.left}, #{self.c.margin.top})")
-        .call(chart)
-        
-      
-    )
-    
-
-  init: (conf) ->
-    self = @
-    c =
-      margin: top: 10, right: 30, bottom: 20, left: 30
-      axis: yes
-      sub_ticks: no
-    c.height = 500 - c.margin.top - c.margin.bottom
-    c.width = 100 - c.margin.left - c.margin.right
-    @c = $.extend(yes, c, conf)
-    #console.log @c
- 
-    
-    box = (g) ->
-    
       # Compute the new y-scale.
       self.y1 = d3.scale.linear()
         # range inverted because svg y positions are counted from top to bottom
@@ -64,14 +48,60 @@ class boxChart
       # Retrieve the old y-scale, if this is an update.
       self.y0 = self.__chart__ || d3.scale.linear()
         # input inverted because svg y positions are counted from top to bottom
-        .domain([0, Infinity])  # input
-        .range(self.y1.range())     # output 
+        .domain([0, Infinity])   # input
+        .range(self.y1.range())  # output 
       
-      # Stash the new scale.
+      # Stash the new y scale.
       self.__chart__ = self.y1
-        
+ 
+      # Set the parent svg, with a g element that wraps everything else.
+      self.svg = d3.select("##{self.vis_id}")
+        .append("svg")
+        .attr("class", "parent")
+        .attr("width", 
+          self.c.width * self.data.length + 
+          (self.c.margin.left + self.c.margin.right) * 2 )
+        .attr("height", 
+          self.c.height + self.c.margin.bottom + self.c.margin.top)
+        .append("g")
+      
+      # Set the axis (common to all boxes).
       if self.c.axis then self.setYAxis.call(@, self)
       
+      # Set a common g element for all boxes.
+      self.boxes = self.svg.append("g")
+        .attr("class", "boxes")
+        .attr("transform", 
+          "translate(#{self.c.margin.left * 2}, #{self.c.margin.top})")
+      
+      # Individual boxes. Note the call to chart, a closure set as:
+      #   box_chart = new boxChart(vis_id)
+      #   chart = box_chart.init()
+      #   box_chart.draw(chart)  # this function
+      self.boxes.selectAll("g.box")
+        .data(self.data)
+      .enter().append("g")
+        .attr("class", "box")
+        .attr("width", 
+          self.c.width + self.c.margin.left + self.c.margin.right)
+        .attr("height", 
+          self.c.height + self.c.margin.bottom + self.c.margin.top)
+        .call(chart)
+        
+    )
+    
+
+  init: (conf) ->
+    self = @
+    c =
+      margin: top: 10, right: 20, bottom: 20, left: 20
+      axis: yes
+      sub_ticks: no
+    c.height = 500 - c.margin.top - c.margin.bottom
+    c.width = 100 - c.margin.left - c.margin.right
+    @c = $.extend(yes, c, conf)
+
+    box = (g) -> 
       g.each( (d, i) ->
         # create a box plot for each data group
         #self.setSpread.call(@, self, d, i)
@@ -114,15 +144,14 @@ class boxChart
     self.svg.append("g")
       .attr("class", "y axis")
       .call(yAxis)
-      # translate(x, y)
-      .attr("transform", "translate(#{self.c.margin.left}, #{self.c.margin.top})")
+      .attr("transform", "translate(#{self.c.margin.left * 2}, 
+        #{self.c.margin.top})")
       
       
   setSpread: (self, d, i) ->
   
   
   setMedian: (self, d, i) ->
-    # special case of getQuantiles for finding the median value of an array of values
     median = d3.quantile(d.sort( (a, b) -> d3.ascending(a, b) ), 0.5)
     line = @g.selectAll("line.median")
       .data([median])
