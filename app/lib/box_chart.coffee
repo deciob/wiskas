@@ -28,13 +28,15 @@ class boxChart
         .data(self.data)
       .enter().append("svg")
         .attr("class", "box")
-        # width fluid, inherits from parent element
+        .attr("width", 
+          self.c.width + self.c.margin.left + self.c.margin.right)
         .attr("height", 
           self.c.height + self.c.margin.bottom + self.c.margin.top)
       self.svg.append("g")
         .attr("transform", 
           "translate(#{self.c.margin.left}, #{self.c.margin.top})")
         .call(chart)
+        
       
     )
     
@@ -42,51 +44,104 @@ class boxChart
   init: (conf) ->
     self = @
     c =
-      margin: top: 10, right: 50, bottom: 20, left: 50
+      margin: top: 10, right: 30, bottom: 20, left: 30
+      axis: yes
+      sub_ticks: no
     c.height = 500 - c.margin.top - c.margin.bottom
-    c.width = 600 - c.margin.left - c.margin.right
+    c.width = 100 - c.margin.left - c.margin.right
     @c = $.extend(yes, c, conf)
+    #console.log @c
  
     
     box = (g) ->
     
-      y = d3.scale.linear()
+      # Compute the new y-scale.
+      self.y1 = d3.scale.linear()
+        # range inverted because svg y positions are counted from top to bottom
+        .domain([self.min, self.max])  # input
+        .range([self.c.height, 0])     # output 
+      
+      # Retrieve the old y-scale, if this is an update.
+      self.y0 = self.__chart__ || d3.scale.linear()
         # input inverted because svg y positions are counted from top to bottom
-        .domain([self.max, self.min])  # input
-        .range([0, self.c.height])      # output
-
-      yAxis = d3.svg.axis()
-        .scale(y)
-        .orient("left")
-        .tickSize(6, 3, 0) # sets major to 6, minor to 3, and end to 0
+        .domain([0, Infinity])  # input
+        .range(self.y1.range())     # output 
+      
+      # Stash the new scale.
+      self.__chart__ = self.y1
         
-      self.svg.append("g")
-        .attr("class", "y axis")
-        .call(yAxis)
-        # translate(x, y)
-        .attr("transform", "translate(#{self.c.margin.left}, #{self.c.margin.top})")
+      if self.c.axis then self.setYAxis.call(@, self)
       
       g.each( (d, i) ->
-        #console.log 'g.each', d, i 
         # create a box plot for each data group
+        #self.setSpread.call(@, self, d, i)
+        @g = d3.select(@)
+        self.setMedian.call(@, self, d, i)
       )
-      
-      
+        
     box.width = (value) ->
       return self.c.width unless arguments.length
       self.c.width = value
       box
-      
       
     box.height = (value) ->
       return self.c.height unless arguments.length
       self.c.height = value
       box
       
+    box.axis = (value) ->
+      return self.c.axis unless arguments.length
+      self.c.axis = value
+      box
+      
+    box.subTicks = (value) ->
+      return self.c.sub_ticks unless arguments.length
+      self.c.sub_ticks = value
+      box
 
-    return box
+    return box  ## end of init function, returns a closure
     
 
+  setYAxis: (self) ->
+    sub_ticks = if self.c.sub_ticks then 1 else 0
+  
+    yAxis = d3.svg.axis()
+      .scale(self.y1)
+      .orient("left")
+      .tickSubdivide(sub_ticks)
+      .tickSize(6, 3, 0) # sets major to 6, minor to 3, and end to 0
+
+    self.svg.append("g")
+      .attr("class", "y axis")
+      .call(yAxis)
+      # translate(x, y)
+      .attr("transform", "translate(#{self.c.margin.left}, #{self.c.margin.top})")
+      
+      
+  setSpread: (self, d, i) ->
+  
+  
+  setMedian: (self, d, i) ->
+    # special case of getQuantiles for finding the median value of an array of values
+    median = d3.quantile(d.sort( (a, b) -> d3.ascending(a, b) ), 0.5)
+    line = @g.selectAll("line.median")
+      .data([median])
+    line.enter().append("svg:line")
+      .attr("class", "median")
+      .attr("x1", self.c.margin.left)
+      .attr("y1", self.y0)
+      .attr("x2", self.c.width)
+      .attr("y2", self.y0)
+    .transition()
+      .duration(500)
+      .attr("y1", self.y1)
+      .attr("y2", self.y1)
+    line.transition()
+      .duration(500)
+      .attr("y1", self.y1)
+      .attr("y2", self.y1)
+
+      
 
 module.exports = boxChart
 
