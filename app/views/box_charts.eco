@@ -1,2 +1,4 @@
 <h3>box-and-wisker plot</h3>
+<button>Change data</button>
+<p id="<%= @vis_title_id %>_title"></p>
 <div id="<%= @vis_id %>"></div>
