@@ -11,6 +11,11 @@
     "spine/lib/manager"
   ],
   "libs": [
+    "./lib/miso/lib/moment.js",  
+    "./lib/miso/lib/underscore.js",  
+    "./lib/miso/lib/underscore.deferred.js",  
+    "./lib/miso/lib/underscore.math.js",  
+    "./lib/miso/miso.ds.0.1.2.js",  
     "./lib/d3.v2.js",
     "./lib/csv/csv.js",
     "./lib/csv/format.js",
