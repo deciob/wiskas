@@ -6,68 +6,44 @@ class BoxCharts extends Spine.Controller
 
   template: require('views/box_charts')
   
+  elements:
+    "button": "update_button"
+    "#vis_title": "title"
+  
   events: 
     "click button": "updateVisualisation"
   
   country_groups_ref: [
-    "Low income",
-    "Lower middle income",
-    "Upper middle income",
-    "High income: nonOECD",
+    "Low income"
+    "Lower middle income"
+    "Upper middle income"
+    "High income: nonOECD"
     "High income: OECD"
   ]
 
   constructor: ->
     super
+    Spine.bind "title:update", @updateTitle
     @vis_id = @el.attr('id') + "_vis"
     @vis_title_id = @el.attr('id') + "_vis_title"
-    @box_chart = new boxChart(@vis_id)
-    @indicators = []
-    @i = 1
-    @datasets = {}
-    @country_groups = no
-    BoxChartsDataset.each (indicator) => 
-      @indicators.push(indicator.id)
-    #BoxChartsDataset.bind "update", @changeDataset
-    @default_indicator =  BoxChartsDataset.first()
-    Spine.Route.navigate("/vis", @default_indicator.slug)
+    @vis_ids = []  # used as an ordered reference to update the visualisation
+    @current_vis_id = no
+    @box_chart = new boxChart(@vis_id)  # d3 vis
+    Spine.Route.navigate("/vis")
     @render()
-    
     
   render: ->
     self = @
     @.html @template(@)
-    # to override defaults you can do this:
-    # vis = @box_chart.init( {height:100} )
-    # or this
-    # vis = @box_chart.init().height(200)
-    #Miso testing
-    ds_economies = new Miso.Dataset(
-      url: "/data/economies.csv"
-      delimiter: ","
-    )
-    ds_default_indicator = new Miso.Dataset(
-      url: self.default_indicator.url #"../data/life_expectancy_2010.csv"
-      delimiter: ","
-    )
-    _.when(ds_economies.fetch(), ds_default_indicator.fetch()).then ->
-      dataset = self.buildDataset(ds_economies, ds_default_indicator)
-      self.datasets[self.default_indicator.slug] = ds_default_indicator
-      self.chart = self.box_chart.init()#{dataset:self.dataset})
-      #.axis(no)
-      #.subTicks(yes)
-      #.height(200)
-      .width(100)
-      .dataset(dataset)
-      self.box_chart.draw(self.chart)
+    @setupData()
     
-  buildDataset: (ds_economies, indicator) =>
+  buildDataset: (indicator) =>
     self = @
     min = Infinity
     max = -Infinity
     if not @country_groups
       @country_groups = {}
-      ds_economies.each( (row) =>
+      self.ref_ds.each( (row) =>
         @country_groups[row.Code] = row['Income group']
       )
     data = []
@@ -89,37 +65,74 @@ class BoxCharts extends Spine.Controller
     dataset.max = max
     dataset
     
-  
   updateVisualisation: =>
     self = @
-    if not @indicators[@i]
-      @i = 0
-    box_chart_dataset = BoxChartsDataset.find(@indicators[@i])
-    slug = box_chart_dataset.slug
-    Spine.Route.navigate( "/vis", slug )
-    if @datasets[slug]
-      dataset = self.buildDataset(no, @datasets[slug])
-      @chart.dataset(dataset)
-      @box_chart.update(self.chart)
+    old_vis = BoxChartsDataset.find(@current_vis_id)
+    old_vis_index = @vis_ids.indexOf(old_vis.id)
+    if @vis_ids[old_vis_index + 1]
+      new_vis_index = @vis_ids[old_vis_index + 1]
     else
-      ds_indicator = new Miso.Dataset(
-        url: box_chart_dataset.url #"../data/life_expectancy_2010.csv"
-        delimiter: ","
-      )
-      ds_indicator.fetch(
-        success : ->
-          dataset = self.buildDataset(no, @)
-          self.datasets[slug] = @
-          self.chart.dataset(dataset)
-          self.box_chart.update(self.chart)
-      )
-    @i += 1
-  
-  
-  changeDataset: (indicator) =>
-    if indicator.active
-      console.log indicator.title
-      
+      new_vis_index = @vis_ids[0]
+    new_vis = BoxChartsDataset.find(new_vis_index)
+    Spine.Route.navigate( "/vis", new_vis.id )
+    self.chart.dataset(new_vis.dataset)
+    self.box_chart.update(self.chart)
+    @current_vis_id = new_vis_index
 
-      
+   
+  setupData: ->
+    # for every entry in BoxChartsDataset
+    # save a dataset object that looks like:
+    # [ min, max, [all_data] ]
+    # then navigate to the first one saved
+    # and draw the chart (d3)!
+    # relies on miso-dataset (http://misoproject.com)
+    self = @
+    initialised = no
+    first = BoxChartsDataset.first()
+    datasets = {}
+    saveDataset = (id) ->
+      dataset = self.buildDataset(@)
+      record = BoxChartsDataset.find(id)
+      record.dataset = dataset
+      record.save()
+      if not initialised
+        Spine.Route.navigate("/vis", id)
+        # to override defaults you can do this:
+        # vis = @box_chart.init( {height:100} )
+        # or this
+        # vis = @box_chart.init().height(200)
+        self.chart = self.box_chart.init()
+          .axis(no)
+          .subTicks(yes)
+          .height(400)
+          .width(100)
+          .dataset(dataset)
+        self.box_chart.draw(self.chart)
+        self.current_vis_id = id
+        initialised = yes
+    getDatasets = ->
+      BoxChartsDataset.each (record) ->
+        id = record.id
+        self.vis_ids.push(id)  #used later, when updating the vis
+        datasets[id] = new Miso.Dataset(
+          url: record.url
+          delimiter: ","
+        )
+        _.when( datasets[id].fetch() ).then ->
+          saveDataset.call(@, id)
+    # reference dataset, contains information on how to group countries
+    ref_ds = new Miso.Dataset(
+      url: "/data/economies.csv"
+      delimiter: ","
+    )
+    _.when( ref_ds.fetch() ).then ->
+      getDatasets.call(@)
+    @ref_ds = ref_ds
+    
+  updateTitle: (txt) =>
+    @title.html(txt)
+    
+    
+    
 module.exports = BoxCharts

@@ -1,7 +1,7 @@
 Spine = require('spine')
 
 class BoxChartDataset extends Spine.Model
-  @configure 'BoxChartDataset', 'title', 'slug', 'url', 'active'
+  @configure 'BoxChartDataset', 'title', 'url', 'active', 'dataset'
   
 
   
