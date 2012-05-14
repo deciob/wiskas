@@ -102,11 +102,12 @@ class BoxCharts extends Spine.Controller
         # vis = @box_chart.init( {height:100} )
         # or this
         # vis = @box_chart.init().height(200)
-        self.chart = self.box_chart.init()
-          .axis(no)
+        self.chart = self.box_chart.init({out_margin: top: 10, right: 20, bottom: 20, left: 40})
+          .in_margin(top: 10, right: 30, bottom: 20, left: 30)
+          .axis(yes)
           .subTicks(yes)
           .height(400)
-          .width(100)
+          .width(140)
           .dataset(dataset)
         self.box_chart.draw(self.chart)
         self.current_vis_id = id
