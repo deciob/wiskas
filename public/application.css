@@ -1,0 +1,41 @@
+body {
+  width: 100%;
+  *zoom: 1;
+}
+body:before,
+body:after {
+  content: "";
+  display: table;
+}
+body:after {
+  clear: both;
+}
+body {
+  margin: 0;
+}
+#header {
+  color: #4d926f;
+}
+div {
+  color: #4d926f;
+}
+.axis line,
+.axis path {
+  fill: none;
+  stroke: #33614a;
+  shape-rendering: crispEdges;
+}
+.box line,
+.box rect,
+.box circle {
+  stroke: #000;
+  fill: #fff;
+}
+#box_chart {
+  width: 90%;
+  margin-left: auto;
+  margin-right: auto;
+}
+#box_chart_vis {
+  border: 1px solid #64be90;
+}

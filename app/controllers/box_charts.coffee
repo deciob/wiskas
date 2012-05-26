@@ -1,6 +1,8 @@
 Spine = require('spine')
-boxChart = require('lib/wisk/box_chart')
+BoxChart = require('lib/wisk/box_chart')
 BoxChartsDataset = require('models/box_chart_dataset')
+
+#console.log BoxChart
 
 class BoxCharts extends Spine.Controller
 
@@ -28,7 +30,7 @@ class BoxCharts extends Spine.Controller
     @vis_title_id = @el.attr('id') + "_vis_title"
     @vis_ids = []  # used as an ordered reference to update the visualisation
     @current_vis_id = no
-    @box_chart = new boxChart(@vis_id)  # d3 vis
+    @box_chart = new BoxChart(@vis_id)  # d3 vis
     Spine.Route.navigate("/vis")
     @render()
     
@@ -102,12 +104,13 @@ class BoxCharts extends Spine.Controller
         # vis = @box_chart.init( {height:100} )
         # or this
         # vis = @box_chart.init().height(200)
-        self.chart = self.box_chart.init({out_margin: top: 10, right: 20, bottom: 20, left: 40})
+        self.chart = self.box_chart.init()
           .in_margin(top: 10, right: 30, bottom: 20, left: 30)
           .axis(yes)
           .subTicks(yes)
           .height(400)
-          .width(140)
+          .width(600)
+          #.stroke_width(5)
           .dataset(dataset)
         self.box_chart.draw(self.chart)
         self.current_vis_id = id
